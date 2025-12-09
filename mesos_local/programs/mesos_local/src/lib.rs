@@ -7,10 +7,10 @@ use anchor_spl::{
 declare_id!("DfaszuQVod1HEeqqEY8vDkXbGyRgMxSaZHbkjo9JqWT7");
 
 // Constants
-pub const USDC_TO_PLN_RATE: u64 = 4; // 1 USDC = 4 PLN
+pub const USDC_TO_VOUCHER_RATE: u64 = 4; // 1 USDC = 4 PLN
 pub const VAULT_SEED: &[u8] = b"vault";
 pub const ROLE_SEED: &[u8] = b"role";
-pub const PLN_MINT_SEED: &[u8] = b"pln_mint";
+pub const VOUCHER_MINT_SEED: &[u8] = b"voucher_mint";
 
 // Devnet USDC address
 pub const USDC_MINT: Pubkey = pubkey!("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
@@ -26,18 +26,18 @@ pub enum Role {
 pub mod mesos_local {
     use super::*;
 
-    /// Initialize the vault with PLNc token mint
+    /// Initialize the vault with voucher token mint
     pub fn initialize_vault(ctx: Context<InitializeVault>) -> Result<()> {
         let vault = &mut ctx.accounts.vault;
         vault.authority = ctx.accounts.authority.key();
         vault.usdc_mint = ctx.accounts.usdc_mint.key();
-        vault.pln_mint = ctx.accounts.pln_mint.key();
+        vault.voucher_mint = ctx.accounts.voucher_mint.key();
         vault.total_usdc_deposited = 0;
-        vault.total_pln_minted = 0;
+        vault.total_voucher_minted = 0;
         vault.bump = ctx.bumps.vault;
-        vault.pln_mint_bump = ctx.bumps.pln_mint;
+        vault.voucher_mint_bump = ctx.bumps.voucher_mint;
         
-        msg!("Vault initialized. PLNc mint: {}", ctx.accounts.pln_mint.key());
+        msg!("Vault initialized. voucher mint: {}", ctx.accounts.voucher_mint.key());
         Ok(())
     }
 
@@ -76,7 +76,7 @@ pub mod mesos_local {
         Ok(())
     }
 
-    /// Deposit USDC and mint PLNc vouchers at 1:4 rate
+    /// Deposit USDC and mint voucher vouchers at 1:4 rate
     pub fn deposit_usdc(ctx: Context<DepositUsdc>, usdc_amount: u64) -> Result<()> {
         require!(usdc_amount > 0, MesosError::InvalidAmount);
         
@@ -93,38 +93,38 @@ pub mod mesos_local {
             usdc_amount,
         )?;
         
-        // Calculate PLNc amount (1:4 rate)
-        let pln_amount = usdc_amount.checked_mul(USDC_TO_PLN_RATE).ok_or(MesosError::Overflow)?;
+        // Calculate voucher amount (1:4 rate)
+        let voucher_amount = usdc_amount.checked_mul(USDC_TO_VOUCHER_RATE).ok_or(MesosError::Overflow)?;
         
-        // Mint PLNc to user - use pln_mint as signer
+        // Mint voucher to user - use voucher_mint as signer
         let vault_key = ctx.accounts.vault.key();
-        let pln_mint_bump = ctx.accounts.vault.pln_mint_bump;
-        let seeds = &[PLN_MINT_SEED, vault_key.as_ref(), &[pln_mint_bump]];
+        let voucher_mint_bump = ctx.accounts.vault.voucher_mint_bump;
+        let seeds = &[VOUCHER_MINT_SEED, vault_key.as_ref(), &[voucher_mint_bump]];
         let signer_seeds = &[&seeds[..]];
         
         token::mint_to(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
                 MintTo {
-                    mint: ctx.accounts.pln_mint.to_account_info(),
-                    to: ctx.accounts.user_pln_account.to_account_info(),
-                    authority: ctx.accounts.pln_mint.to_account_info(),
+                    mint: ctx.accounts.voucher_mint.to_account_info(),
+                    to: ctx.accounts.user_voucher_account.to_account_info(),
+                    authority: ctx.accounts.voucher_mint.to_account_info(),
                 },
                 signer_seeds,
             ),
-            pln_amount,
+            voucher_amount,
         )?;
         
         // Update vault state
         let vault = &mut ctx.accounts.vault;
         vault.total_usdc_deposited = vault.total_usdc_deposited.checked_add(usdc_amount).ok_or(MesosError::Overflow)?;
-        vault.total_pln_minted = vault.total_pln_minted.checked_add(pln_amount).ok_or(MesosError::Overflow)?;
+        vault.total_voucher_minted = vault.total_voucher_minted.checked_add(voucher_amount).ok_or(MesosError::Overflow)?;
         
-        msg!("Deposited {} USDC, minted {} PLNc", usdc_amount, pln_amount);
+        msg!("Deposited {} USDC, minted {} voucher", usdc_amount, voucher_amount);
         Ok(())
     }
 
-    /// Transfer PLNc with role-based access control (THE COMPLIANCE GATE)
+    /// Transfer voucher with role-based access control (THE COMPLIANCE GATE)
     pub fn transfer_pln(ctx: Context<TransferPln>, amount: u64) -> Result<()> {
         require!(amount > 0, MesosError::InvalidAmount);
         
@@ -137,46 +137,46 @@ pub mod mesos_local {
         require!(ctx.accounts.recipient_role.is_active, MesosError::RecipientNotRegistered);
         require!(ctx.accounts.recipient_role.role == Role::Merchant, MesosError::OnlyMerchantCanReceive);
         
-        // Transfer PLNc from client to merchant
+        // Transfer voucher from client to merchant
         token::transfer(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
                 Transfer {
-                    from: ctx.accounts.sender_pln_account.to_account_info(),
-                    to: ctx.accounts.recipient_pln_account.to_account_info(),
+                    from: ctx.accounts.sender_voucher_account.to_account_info(),
+                    to: ctx.accounts.recipient_voucher_account.to_account_info(),
                     authority: ctx.accounts.sender.to_account_info(),
                 },
             ),
             amount,
         )?;
         
-        msg!("Transferred {} PLNc from client to merchant", amount);
+        msg!("Transferred {} voucher from client to merchant", amount);
         Ok(())
     }
 
-    /// Settle: Merchant burns PLNc to receive USDC
-    pub fn settle(ctx: Context<Settle>, pln_amount: u64) -> Result<()> {
-        require!(pln_amount > 0, MesosError::InvalidAmount);
+    /// Settle: Merchant burns voucher to receive USDC
+    pub fn settle(ctx: Context<Settle>, voucher_amount: u64) -> Result<()> {
+        require!(voucher_amount > 0, MesosError::InvalidAmount);
         
         // Only merchants can settle
         require!(ctx.accounts.merchant_role.is_active, MesosError::NotRegistered);
         require!(ctx.accounts.merchant_role.role == Role::Merchant, MesosError::OnlyMerchantCanSettle);
         
         // Calculate USDC amount (reverse 1:4 rate)
-        let usdc_amount = pln_amount.checked_div(USDC_TO_PLN_RATE).ok_or(MesosError::Overflow)?;
+        let usdc_amount = voucher_amount.checked_div(USDC_TO_VOUCHER_RATE).ok_or(MesosError::Overflow)?;
         require!(usdc_amount > 0, MesosError::AmountTooSmall);
         
-        // Burn PLNc from merchant
+        // Burn voucher from merchant
         token::burn(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
                 Burn {
-                    mint: ctx.accounts.pln_mint.to_account_info(),
-                    from: ctx.accounts.merchant_pln_account.to_account_info(),
+                    mint: ctx.accounts.voucher_mint.to_account_info(),
+                    from: ctx.accounts.merchant_voucher_account.to_account_info(),
                     authority: ctx.accounts.merchant.to_account_info(),
                 },
             ),
-            pln_amount,
+            voucher_amount,
         )?;
         
         // Transfer USDC from vault to merchant
@@ -201,9 +201,9 @@ pub mod mesos_local {
         // Update vault state
         let vault = &mut ctx.accounts.vault;
         vault.total_usdc_deposited = vault.total_usdc_deposited.checked_sub(usdc_amount).ok_or(MesosError::Underflow)?;
-        vault.total_pln_minted = vault.total_pln_minted.checked_sub(pln_amount).ok_or(MesosError::Underflow)?;
+        vault.total_voucher_minted = vault.total_voucher_minted.checked_sub(voucher_amount).ok_or(MesosError::Underflow)?;
         
-        msg!("Settled {} PLNc for {} USDC", pln_amount, usdc_amount);
+        msg!("Settled {} voucher for {} USDC", voucher_amount, usdc_amount);
         Ok(())
     }
 }
@@ -221,17 +221,17 @@ pub struct InitializeVault<'info> {
     )]
     pub vault: Account<'info, Vault>,
     
-    /// PLNc token mint
+    /// voucher token mint
     #[account(
         init,
         payer = authority,
-        seeds = [PLN_MINT_SEED, vault.key().as_ref()],
+        seeds = [VOUCHER_MINT_SEED, vault.key().as_ref()],
         bump,
         mint::decimals = 6,
-        mint::authority = pln_mint,
-        mint::freeze_authority = pln_mint,
+        mint::authority = voucher_mint,
+        mint::freeze_authority = voucher_mint,
     )]
-    pub pln_mint: Account<'info, Mint>,
+    pub voucher_mint: Account<'info, Mint>,
     
     pub usdc_mint: Account<'info, Mint>,
     
@@ -292,7 +292,7 @@ pub struct DepositUsdc<'info> {
     pub vault: Account<'info, Vault>,
     
     #[account(mut)]
-    pub pln_mint: Account<'info, Mint>,
+    pub voucher_mint: Account<'info, Mint>,
     
     pub usdc_mint: Account<'info, Mint>,
     
@@ -305,10 +305,10 @@ pub struct DepositUsdc<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        associated_token::mint = pln_mint,
+        associated_token::mint = voucher_mint,
         associated_token::authority = user,
     )]
-    pub user_pln_account: Account<'info, TokenAccount>,
+    pub user_voucher_account: Account<'info, TokenAccount>,
     
     #[account(
         init_if_needed,
@@ -327,7 +327,7 @@ pub struct DepositUsdc<'info> {
 pub struct TransferPln<'info> {
     pub vault: Account<'info, Vault>,
     
-    pub pln_mint: Account<'info, Mint>,
+    pub voucher_mint: Account<'info, Mint>,
     
     /// Role entry for the sender - must be Client
     pub sender_role: Account<'info, RoleEntry>,
@@ -342,15 +342,15 @@ pub struct TransferPln<'info> {
     pub recipient: UncheckedAccount<'info>,
     
     #[account(mut)]
-    pub sender_pln_account: Account<'info, TokenAccount>,
+    pub sender_voucher_account: Account<'info, TokenAccount>,
     
     #[account(
         init_if_needed,
         payer = sender,
-        associated_token::mint = pln_mint,
+        associated_token::mint = voucher_mint,
         associated_token::authority = recipient,
     )]
-    pub recipient_pln_account: Account<'info, TokenAccount>,
+    pub recipient_voucher_account: Account<'info, TokenAccount>,
     
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -363,7 +363,7 @@ pub struct Settle<'info> {
     pub vault: Account<'info, Vault>,
     
     #[account(mut)]
-    pub pln_mint: Account<'info, Mint>,
+    pub voucher_mint: Account<'info, Mint>,
     
     pub usdc_mint: Account<'info, Mint>,
     
@@ -374,7 +374,7 @@ pub struct Settle<'info> {
     pub merchant: Signer<'info>,
     
     #[account(mut)]
-    pub merchant_pln_account: Account<'info, TokenAccount>,
+    pub merchant_voucher_account: Account<'info, TokenAccount>,
     
     #[account(
         init_if_needed,
@@ -399,11 +399,11 @@ pub struct Settle<'info> {
 pub struct Vault {
     pub authority: Pubkey,
     pub usdc_mint: Pubkey,
-    pub pln_mint: Pubkey,
+    pub voucher_mint: Pubkey,
     pub total_usdc_deposited: u64,
-    pub total_pln_minted: u64,
+    pub total_voucher_minted: u64,
     pub bump: u8,
-    pub pln_mint_bump: u8,
+    pub voucher_mint_bump: u8,
 }
 
 #[account]
