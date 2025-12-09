@@ -3,6 +3,21 @@ The Global "Limited Network" Settlement Rail for B2B Logistics
 # 📄 Executive Summary
 We are building a closed-loop B2B payment rail specifically for the global logistics industry.
 Instead of functioning as a "Crypto Bank" (which is slow, expensive, and regulated), we operate as a Voucher Issuer. We enable Crypto-Native Companies (DePIN, Mining, Tech) to pay Real-World Logistics Providers (Truckers, Ports, Warehouses) instantly using USDC, while ensuring full regulatory compliance through a Restricted Voucher Model.
+
+# 🪙 Token Naming Convention
+Each voucher token follows the pattern: **`[CURRENCY][VERTICAL]`**
+
+We focus on **emerging market currencies** where stablecoins don't exist yet:
+
+| Token | Region | Vertical | Restricted To |
+|-------|--------|----------|---------------|
+| `PLNLOG` | 🇵🇱 Poland | Logistics | Fuel, Freight, Warehousing |
+| `BRLLOG` | 🇧🇷 Brazil | Logistics | Fuel, Freight, Warehousing |
+| `MXNLOG` | 🇲🇽 Mexico | Logistics | Fuel, Freight, Warehousing |
+| `PLNMFG` | 🇵🇱 Poland | Manufacturing | Raw materials, Components |
+
+> **Note**: We don't mint USD or EUR vouchers — clients can use USDC/EURC directly for those.
+
 # 🏗 System Architecture
 We utilize Solana for its speed and "PayFi" capabilities, leveraging Token-2022 extensions to enforce compliance at the protocol level.
 ## 1. The Core Engine: "The Sovereign Vault"
