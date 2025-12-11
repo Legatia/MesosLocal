@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount, Transfer, MintTo, Burn},
 };
 
-declare_id!("DfaszuQVod1HEeqqEY8vDkXbGyRgMxSaZHbkjo9JqWT7");
+declare_id!("CqDY4KYGkkTNWSfTCirhTYxBknQJox7WG4xDrq683x2X");
 
 // Constants
 pub const USDC_TO_VOUCHER_RATE: u64 = 4; // 1 USDC = 4 PLN

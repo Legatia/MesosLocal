@@ -23,7 +23,7 @@ We utilize Solana for its speed and "PayFi" capabilities, leveraging Token-2022 
 ## 1. The Core Engine: "The Sovereign Vault"
 A custom Solana Program (Smart Contract) that acts as the Minting Authority.
  * Collateral: 100% USDC backed.
- * Minting Logic: Users deposit USDC \rightarrow Contract mints PLNc (or LogisticsPoints) at a hard-coded Oracle rate.
+ * Minting Logic: Users deposit USDC \rightarrow Contract mints Voucher (or LogisticsPoints) at a hard-coded Oracle rate.
  * Redemption:
    * Users: Cannot redeem for cash (Strict One-Way flow).
    * Merchants: Can redeem for Fiat settlement (B2B Settlement).
@@ -66,7 +66,7 @@ We replace the Factoring Bank and the Forex Broker simultaneously.
  * Tactic: Offer them a "Smart Invoice" tool to pay their logistics partners in USDC. We onboard the forwarders on their behalf.
 ### Phase 2: The "Fuel Card" Integration
  * Target: Mid-Market Polish Freight Forwarders.
- * Tactic: Integrate with a local Fuel Card provider (or become one). Allow truckers to spend PLNc directly at the pump, removing the need to off-ramp to a bank entirely.
+ * Tactic: Integrate with a local Fuel Card provider (or become one). Allow truckers to spend Voucher directly at the pump, removing the need to off-ramp to a bank entirely.
 ## 🛠 Roadmap (Next 3 Steps)
 ### Legal Wrapper: Register as a VASP in Poland (Cost: ~600 PLN) to legally handle the crypto-to-fiat exchange for merchants.
 ### Tech MVP: Deploy the Solana Anchor Program with a simple "Whitelist" Transfer Hook.
