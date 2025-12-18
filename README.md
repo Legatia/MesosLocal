@@ -73,3 +73,35 @@ We replace the Factoring Bank and the Forex Broker simultaneously.
 ### First Pilot: Sign ONE DePIN hardware distributor and their primary Freight Forwarder to process a single $10k invoice.
 ## ⚠️ Disclaimer
 This project is a restricted B2B voucher system, not a public stablecoin. It is not available for retail speculation. All merchants must pass KYB (Know Your Business) verification.
+
+---
+
+# 🤖 AI Dispatcher Agent
+
+A multi-tenant AI assistant powered by **Groq Cloud (Llama 3.1)** that:
+- Parses natural language payment commands
+- Provides balance and merchant queries
+- Enforces per-business data isolation
+
+## Quick Start
+```bash
+cd mesos_local/frontend
+npm install
+echo "GROQ_API_KEY=gsk_your_key" > .env.local
+npm run dev
+```
+
+## Supported Commands
+| Command | Response |
+|---------|----------|
+| `"Pay 50 to [address]"` | Parses amount + address for transfer |
+| `"What's my balance?"` | Shows current vault balance |
+| `"Who can I pay?"` | Lists registered merchants |
+| `"Treasury status"` | Shows yield/idle funds |
+
+## Multi-Tenant Isolation
+Each connected wallet acts as a `tenantId`. The AI only receives context for that specific business:
+- ✅ Tenant A cannot see Tenant B's data
+- ✅ Audit logs track tenant + message
+- ✅ Premium tier: Fully isolated instances (roadmap)
+
